@@ -685,199 +685,11 @@ void Meanshift::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
   }
 }
 
-/*void Meanshift::eventsCallback_simple(const dvs_msgs::EventArray::ConstPtr& msg)
-{
-  // only create image if at least one subscriber
-  if (image_pub_.getNumSubscribers() > 0)
-  {
-    cv_bridge::CvImage cv_image;
-
-    if (display_method_ == RED_BLUE)
-    {
-      cv_image.encoding = "bgr8";
-
-      if (last_image_.rows == msg->height && last_image_.cols == msg->width)
-      {
-        last_image_.copyTo(cv_image.image);
-        used_last_image_ = true;
-      }
-      else
-      {
-        cv_image.image = cv::Mat(msg->height, msg->width, CV_8UC3);
-        cv_image.image = cv::Scalar(128, 128, 128);
-      }
-
-      for (int i = 0; i < msg->events.size(); ++i)
-      {
-        const int x = msg->events[i].x;
-        const int y = msg->events[i].y;
-
-        cv_image.image.at<cv::Vec3b>(cv::Point(x, y)) = (
-            msg->events[i].polarity == true ? cv::Vec3b(255, 0, 0) : cv::Vec3b(0, 0, 255));
-      }
-    }
-    else
-    {
-      cv_image.encoding = "mono8";
-      cv_image.image = cv::Mat(msg->height, msg->width, CV_8U);
-      cv_image.image = cv::Scalar(128);
-
-      cv::Mat on_events = cv::Mat(msg->height, msg->width, CV_8U);
-      on_events = cv::Scalar(0);
-
-      cv::Mat off_events = cv::Mat(msg->height, msg->width, CV_8U);
-      off_events = cv::Scalar(0);
-
-      // count events per pixels with polarity
-      for (int i = 0; i < msg->events.size(); ++i)
-      {
-        const int x = msg->events[i].x;
-        const int y = msg->events[i].y;
-
-        if (msg->events[i].polarity == 1)
-          on_events.at<uint8_t>(cv::Point(x, y))++;
-        else
-          off_events.at<uint8_t>(cv::Point(x, y))++;
-      }
-
-        // scale image
-      cv::normalize(on_events, on_events, 0, 128, cv::NORM_MINMAX, CV_8UC1);
-      cv::normalize(off_events, off_events, 0, 127, cv::NORM_MINMAX, CV_8UC1);
-
-      cv_image.image += on_events;
-      cv_image.image -= off_events;
-    }
-      image_pub_.publish(cv_image.toImageMsg());
-  }
-
-  if (image_segmentation_pub_.getNumSubscribers() > 0)
-  {
-	  cv_bridge::CvImage cv_segments;
-
-	  //Doing color meanshift
-	  cv::Mat diffTimestampMatrix = cv::Mat(numRows, numCols, CV_64F, cv::Scalar::all(0.));
-	  cv::Mat timestampMatrix = cv::Mat(numRows, numCols, CV_64F, cv::Scalar::all(0.));
-
-	  uint64_t first_timestamp = msg->events[0].ts.toNSec();
-	  double final_timestamp =  (1E-6*(double)(msg->events[(msg->events.size())-1].ts.toNSec()-first_timestamp));
-
-	  // count events per pixels with polarity
-	  cv::Mat data=cv::Mat(3, msg->events.size(), CV_64F, cv::Scalar::all(0.));
-	  int counter = 0;
-
-	  //std::ofstream foutX("/home/fran/xpos.txt");
-	  //std::ofstream foutY("/home/fran/ypos.txt");
-	  //std::ofstream foutTime("/home/fran/timestamp.txt");
-
-	  for (int i = 0; i < msg->events.size(); i++)
-	  {
-		  const int x = msg->events[i].x;
-		  const int y = msg->events[i].y;
-
-		  double event_timestamp =  (1E-6*(double)(msg->events[i].ts.toNSec()-first_timestamp));//now in usecs
-
-		  //if (timestampMatrix.at<double>(cv::Point(x,y))> epsilon)
-		  //	  diffTimestampMatrix.at<double>(cv::Point(x, y)) = event_timestamp -timestampMatrix.at<double>(cv::Point(x, y));
-		  //timestampMatrix.at<double>(cv::Point(x, y))= event_timestamp;
-
-		  if (event_timestamp < 15)
-		  {
-			  data.at<double>(cv::Point(i, 0))= (double)x/numCols;
-			  data.at<double>(cv::Point(i, 1))= (double)y/numRows;
-			  data.at<double>(cv::Point(i, 2))= event_timestamp/final_timestamp;//normalized
-			  counter++;
-		  }
-		  else
-		  {
-			  //ROS_ERROR_STREAM("I'm using "<<counter<<" out of "<<msg->events.size());
-			  break;
-		  }
-		  //foutX<<x<<"\t"; foutY<<y<<"\t"; foutTime<<event_timestamp<<"\t";
-	  }
-	  //foutX.close(); foutY.close(); foutTime.close();
-
-/*
-	  cv::Mat data=cv::Mat(3, 66, CV_64F, cv::Scalar::all(0.));
-	  int counter = 0;
-	  std::ifstream foutX("/home/fran/xpos.txt");
-	  std::ifstream foutY("/home/fran/ypos.txt");
-	  std::ifstream foutTime("/home/fran/timestamp.txt");
-	  final_timestamp = 9.963;
-	  for (int i = 0; i < 66; i++)
-	  {
-		  double x, y, event_timestamp;
-		  foutX>>x; foutY>>y; foutTime>>event_timestamp;
-		  data.at<double>(cv::Point(i, 0))= x/numCols;
-		  data.at<double>(cv::Point(i, 1))= y/numRows;
-		  data.at<double>(cv::Point(i, 2))= event_timestamp/final_timestamp;
-	  }
-	  foutX.close(); foutY.close(); foutTime.close();
-* /
-
-	  //----------------------------------------------------------------------------
-	  //Alternatively, one can use only the time
-	  //cv::Mat result_image;
-	  //cv::normalize(diffTimestampMatrix, result_image, 0, 255, cv::NORM_MINMAX, CV_8UC1);
-	  //----------------------------------------------------------------------------
-
-	  cv::Mat clusterCenters;
-	  cv::Mat segmentation=cv::Mat(numRows, numCols, CV_8UC3);
-	  segmentation = cv::Scalar(128,128,128);
-
-	  std::vector<double> clustCentX, clustCentY, clustCentZ;
-	  std::vector<int> point2Clusters;
-	  double bandwidth = 0.2;
-	  std::vector<cv::Vec3b> RGBColors;
-	  cv::RNG rng(12345);
-
-	  //ROS_ERROR_STREAM("Just before meanshift "<<msg->events.size());
-	  meanshiftCluster_Gaussian(data, &clustCentX, &clustCentY, &clustCentZ, &point2Clusters, bandwidth);
-
-	  //Now, draw the different segments with a color
-	  for(int i=0; i<clustCentX.size(); i++)
-		 RGBColors.push_back(cv::Vec3b((uchar)random(), (uchar)random(), (uchar)random()));
-
-	  counter =0;
-	  for (int i = 0; i < msg->events.size(); i++)
-	  {
-		  const int x = msg->events[i].x;
-		  const int y = msg->events[i].y;
-		  double ts =  (1E-6*(double)(msg->events[i].ts.toNSec()-first_timestamp));//now in usecs
-
-		  if(ts<15)
-		  {
-		  	  segmentation.at<cv::Vec3b>(cv::Point(x,y))=RGBColors[point2Clusters[i]];
-		  	  counter++;
-		  }
-		  else
-		  {
-			  break;
-		  }
-		  //ROS_ERROR_STREAM("segmentation["<<x<<","<<y<<"] = "<<RGBColors[point2Clusters[i]]);
-	  }
-
-	cv_segments.encoding = "bgr8";
-	cv_segments.image =segmentation;
-    image_segmentation_pub_.publish(cv_segments.toImageMsg());
-    //std::cin.ignore();
-
-	//Saving RGB image
-	//if (counterGlobal>20)
-	//{
-	//	char filename[80];
-	//	sprintf(filename,"/home/fran/RGB_%0d.png", counterGlobal+1);
-	//	cv::imwrite(filename , segmentation);
-	//	exit(0);
-	//}
-	//counterGlobal++;
-	//-------------------------------------------------------------------------------------
-
-  }
-}*/
 
 void Meanshift::eventsCallback_simple(const dvs_msgs::EventArray::ConstPtr& msg)
 {
   // only create image if at least one subscriber
+  ROS_INFO("event callback height %d width %d", msg->height, msg->width);
   if (image_pub_.getNumSubscribers() > 0)
   {
     cv_bridge::CvImage cv_image;
@@ -943,97 +755,10 @@ void Meanshift::eventsCallback_simple(const dvs_msgs::EventArray::ConstPtr& msg)
       image_pub_.publish(cv_image.toImageMsg());
   }
 
-/*
-  // only create image if at least one subscriber
-    if (image_debug1_pub_.getNumSubscribers() > 0)
-    {
-      cv_bridge::CvImage cv_image;
-
-      if (display_method_ == RED_BLUE)
-      {
-        cv_image.encoding = "bgr8";
-
-        if (last_image_.rows == msg->height && last_image_.cols == msg->width)
-        {
-          last_image_.copyTo(cv_image.image);
-          used_last_image_ = true;
-        }
-        else
-        {
-          cv_image.image = cv::Mat(msg->height, msg->width, CV_8UC3);
-          cv_image.image = cv::Scalar(128, 128, 128);
-        }
-
-        if(firstevent)
-        {
-        	firsttimestamp = (1E-6*(double)(msg->events[0].ts.toNSec()));
-        	firstevent = false;
-        }
-
-        double maxTs;
-        int posx, posy;
-        double usTime = 16.0;
-        double ts;
-        for (int i = 0; i < msg->events.size(); ++i)
-        {
-          const int x = msg->events[i].x;
-          const int y = msg->events[i].y;
-          ts = (1E-6*(double)(msg->events[i].ts.toNSec())) - firsttimestamp;
-#if BG_FILTERING
-		  //BGAFframe.at<float>(cv::Point(x,y))=(float)(1E-6*(double)(msg->events[i].ts.toNSec()));
-          BGAFframe.at<float>(cv::Point(x,y))=0.;
-		  maxTs = -1;
-		  //ROS_ERROR_STREAM("NEW EVENT "<<x<<","<<y<<":"<<ts);
-		  for(int ii=-1; ii<=1; ii++)
-			  for(int jj=-1; jj<=1; jj++)
-			  {
-				  posx = x + ii;
-				  posy = y + jj;
-				  if(posx<0)
-					  posx = 0;
-				  if(posy<0)
-					  posy=0;
-				  if(posx>numRows-1)
-					  posx = numRows-1;
-				  if(posy>numCols-1)
-					  posy = numCols-1;
-
-				  if(BGAFframe.at<float>(cv::Point(posx,posy)) > maxTs)
-					  maxTs = BGAFframe.at<float>(cv::Point(posx,posy));
-
-				  //ROS_ERROR_STREAM(posx<<","<<posy<<":"<<BGAFframe.at<float>(cv::Point(posx,posy)));
-			  }
-		  //ROS_ERROR_STREAM("maxTs: "<<maxTs);
-		  BGAFframe.at<float>(cv::Point(x,y))=ts;
-		  //ROS_ERROR_STREAM(BGAFframe.at<float>(cv::Point(x,y)) - maxTs);
-
-		  if(BGAFframe.at<float>(cv::Point(x,y)) >= (maxTs + usTime))
-		  {
-			  continue;
-			  //ROS_ERROR_STREAM("HERE");
-		  }
-
-#endif
-		  cv_image.image.at<cv::Vec3b>(cv::Point(x, y)) = (
-              msg->events[i].polarity == true ? cv::Vec3b(255, 0, 0) : cv::Vec3b(0, 0, 255));
-        }
-        //ROS_ERROR_STREAM("DONE--------------------------------------------");
-
-        //Write the total number of events
-        //foutX<<msg->events.size()<<std::endl;
-      }
-      image_debug1_pub_.publish(cv_image.toImageMsg());
-    }
-*/
-
 
   if (image_segmentation_pub_.getNumSubscribers() > 0)
   {
 	  cv_bridge::CvImage cv_segments;
-
-	  //Doing color meanshift
-	  //cv::Mat diffTimestampMatrix = cv::Mat(numRows, numCols, CV_64F, cv::Scalar::all(0.));
-	  //cv::Mat timestampMatrix = cv::Mat(numRows, numCols, CV_64F, cv::Scalar::all(0.));
 
 	  uint64_t first_timestamp = msg->events[0].ts.toNSec();
 	  double final_timestamp =  (1E-6*(double)(msg->events[(msg->events.size())-1].ts.toNSec()-first_timestamp));
@@ -1053,24 +778,10 @@ void Meanshift::eventsCallback_simple(const dvs_msgs::EventArray::ConstPtr& msg)
 
 	  while(beginEvent < msg->events.size())
 	  {
-		  //if(msg->events.size()>15e3)
-			  //ROS_ERROR_STREAM("BEGIN packet "<<beginEvent);
-		  //SELECT SMALL PACKETS OF MAXIMUM 1500 events
 		  counterIn = 0;
 		  counterOut = 0;
-		  //ROS_ERROR_STREAM("Computing events ["<<beginEvent<<","<<min(beginEvent+packet, msg->events.size())<<"]");
-		  //ROS_ERROR_STREAM("SIZE of current package is "<<msg->events.size()<<"];");
-
-		  // count events per pixels with polarity
 		  cv::Mat data=cv::Mat(3, min(packet, msg->events.size()-beginEvent), CV_64F, cv::Scalar::all(0.));
 
-		  //std::ofstream foutX("/home/fran/xpos.txt");
-		  //std::ofstream foutY("/home/fran/ypos.txt");
-		  //std::ofstream foutTime("/home/fran/timestamp.txt");
-
-		  //Filter events
-		  //cv::Mat BGAFframe = cv::Mat(numRows, numCols, CV_32FC1);
-		  //frame =cv::Scalar(-1);
 
 		  if(firstevent)
 		  {
@@ -1282,64 +993,6 @@ void Meanshift::eventsCallback_simple(const dvs_msgs::EventArray::ConstPtr& msg)
 					  //if(foundTrajectory[tmpColorPos] & selectedTrajectory == tmpColorPos) //More than 25 points in the trajectory, start w/ KF
 					  if(foundTrajectory[tmpColorPos]) //More than 25 points in the trajectory, start w/ KF
 					  {
-							//double precTick = ticks;
-							//ticks = (double) cv::getTickCount();
-							//double dT = (ticks - precTick) / cv::getTickFrequency(); //seconds
-
-						    /* In case we use only 1 kalman filter
-						    if((last_timestamp - ticks) > 1)
-						    {
-						    	double precTick = ticks;
-								ticks = last_timestamp;
-								double dT = (ticks - precTick)/1000; //seconds
-
-								if (foundBlobs)
-								{
-									// >>>> Matrix A
-									kf.transitionMatrix.at<float>(2) = dT;
-									kf.transitionMatrix.at<float>(7) = dT;
-									// <<<< Matrix A
-									state = kf.predict();
-									estimClustCenterX = state.at<float>(0);
-									estimClustCenterY = state.at<float>(1);
-								}
-
-								meas.at<float>(0) = clustCentX[i]*DVSW;
-								meas.at<float>(1) = clustCentY[i]*DVSH; //[z_x, z_y]
-
-								if (!foundBlobs) // First detection!
-								{
-									// >>>> Initialization
-									kf.errorCovPre.at<float>(0) = 1; // px
-									kf.errorCovPre.at<float>(5) = 1; // px
-									kf.errorCovPre.at<float>(10) = 2;
-									kf.errorCovPre.at<float>(15) = 2;
-
-									state.at<float>(0) = meas.at<float>(0);
-									state.at<float>(1) = meas.at<float>(1);
-									state.at<float>(2) = 0;
-									state.at<float>(3) = 0; //[z_x, z_y, v_x, v_y]
-									// <<<< Initialization
-
-									kf.statePost = state;
-
-									foundBlobs = true;
-							    }
-							    else
-								   kf.correct(meas); // Kalman Correction
-
-								if(estimClustCenterX>=0.) //initialized to -1
-								{
-									//ROS_ERROR_STREAM("Estimated point = ["<<estimClustCenterX<<", "<<estimClustCenterY<<"];");
-									//ROS_ERROR_STREAM("Measured point = ["<<clustCentX[i]<<", "<<clustCentY[i]<<"];");
-									cv::circle(trajectories, cv::Point(clustCentX[i]*DVSW, clustCentY[i]*DVSH), 2, cv::Scalar( 0, 0, 255 ),-1,8);
-									cv::circle(trajectories, cv::Point(estimClustCenterX, estimClustCenterY), 2, cv::Scalar( 255, 0, 0),-1,8);
-									foutX<<clustCentX[i]*DVSW<<" "<<clustCentY[i]*DVSH<<std::endl;
-									foutX_estim<<estimClustCenterX<<" "<<estimClustCenterY<<std::endl;
-									foutT<<dT<<std::endl;
-								}
-						    }
-						    */
 
 						  if((last_timestamp - vector_of_ticks[tmpColorPos]) > 1)
 							{
@@ -1389,8 +1042,8 @@ void Meanshift::eventsCallback_simple(const dvs_msgs::EventArray::ConstPtr& msg)
 									//ROS_ERROR_STREAM("Estimated difference = ["<<abs(estimClustCenterX/DVSW -clustCentX[i]) <<", "<<abs(estimClustCenterY/DVSH-clustCentY[i])<<"];");
 									//ROS_ERROR_STREAM("Estimated point = ["<<estimClustCenterX<<", "<<estimClustCenterY<<"];");
 									//ROS_ERROR_STREAM("Measured point = ["<<clustCentX[i]<<", "<<clustCentY[i]<<"];");
-									//cv::circle(trajectories, cv::Point(clustCentX[i]*DVSW, clustCentY[i]*DVSH), 2, cv::Scalar( 0, 0, 255 ),-1,8);
-									//cv::circle(trajectories, cv::Point(estimClustCenterX, estimClustCenterY), 2, cv::Scalar( 255, 0, 0),-1,8);
+									cv::circle(trajectories, cv::Point(clustCentX[i]*DVSW, clustCentY[i]*DVSH), 2, cv::Scalar( 0, 0, 255 ),-1,8);
+									cv::circle(trajectories, cv::Point(estimClustCenterX, estimClustCenterY), 2, cv::Scalar( 255, 0, 0),-1,8);
 
 									//foutX<<tmpColorPos<<" "<<clustCentX[i]*DVSW<<" "<<clustCentY[i]*DVSH<<" "<<estimClustCenterX<<" "<<estimClustCenterY<<std::endl;
 
@@ -1409,17 +1062,13 @@ void Meanshift::eventsCallback_simple(const dvs_msgs::EventArray::ConstPtr& msg)
 #endif
 
 					  cv::Point end(clustCentX[i]*DVSW, clustCentY[i]*DVSH);
-/*
-#if KALMAN_FILTERING
-					  //frame, event, colorCluster, X,Y, filtX, filtY
-					  foutX<<counterGlobal+1<<" "<<(double)(1E-6*(msg->events[beginEvent].ts.toNSec()-msg->events[0].ts.toNSec()))<<" " <<tmpColorPos<<" "<<clustCentX[i]*DVSW<<" "<<clustCentY[i]*DVSH<<" "<<estimClustCenterX<<" "<<estimClustCenterY<<std::endl;
-#endif
-*/
+
+
 
 					  allTrajectories[tmpColorPos][(counterTrajectories[tmpColorPos]) & (MAX_NUM_TRAJECTORY_POINTS-1)]=end;
 					  counterTrajectories[tmpColorPos]++;
 					  //activeTrajectories[tmpColorPos]=1;
-					  activeTrajectories.push_back(tmpColorPos);
+					  //activeTrajectories.push_back(tmpColorPos);
 				  }
 
 				  prev_clustCentX = clustCentX;
@@ -1457,35 +1106,6 @@ void Meanshift::eventsCallback_simple(const dvs_msgs::EventArray::ConstPtr& msg)
 
 			  trajectories.copyTo(segmentation); //Always keep trajectories
 
-/*
-#if TEST
-			  char filename[80];
-			  sprintf(filename,"/home/fran/0_tmp/kk/RGB_%0d.png", counterGlobal+1);
-			  cv::imwrite(filename , segmentation);
-
-			  sprintf(filename,"/home/fran/0_tmp/kk/RGB_%0d.txt", counterGlobal+1);
-			  std::ofstream foutallT(filename);
-
-			  for(int k=0; k<activeTrajectories.size(); k++)
-			  	if(counterTrajectories[activeTrajectories[k]]>0)
-				{
-					foutallT<<"ClusterID "<<activeTrajectories[k]<<" with "<<counterTrajectories[activeTrajectories[k]]<<" elems: = [";
-					for(int j=0; j<counterTrajectories[activeTrajectories[k]]; j++) //instead of % I use &(power of 2 -1): it is more efficient
-					{
-						foutallT<<"("<<allTrajectories[activeTrajectories[k]][j].x<<", "<<allTrajectories[activeTrajectories[k]][j].y<<"), ";
-					}
-						foutallT<<"];\n";
-				}
-
-			  foutallT.close();
-#endif
-*/
-
-#if TEST
-			  char filename1[80];
-			  sprintf(filename1,"/home/fran/0_tmp/kk/rgb_%0d.txt", counterGlobal+1);
-			  std::ofstream foutX(filename1);
-#endif
 			  counterIn =0;
 			  counterOut=0;
 			  for (int i = beginEvent; i < min(beginEvent+packet, msg->events.size()); i++)
@@ -1499,82 +1119,29 @@ void Meanshift::eventsCallback_simple(const dvs_msgs::EventArray::ConstPtr& msg)
 					  //if(ts<15) //This is just for painting, we are processing all events
 					  //{
 						  //segmentation.at<cv::Vec3b>(cv::Point(x,y))=RGBColors[(positionClusterColor[point2Clusters[counter]])%MAX_NUM_CLUSTERS];
-						  segmentation.at<cv::Vec3b>(cv::Point(x,y))=RGBColors[(positionClusterColor[point2Clusters[counterOut]])&(MAX_NUM_CLUSTERS-1)]; //cheaper than % (mod operation)
-	#if TEST
-						  //foutX<<x<<" "<<y<<" "<<ts<<" "<<msg->events[counter].polarity<<'\n';
-						  foutX<<x<<'\t'<<'\t'<<y<<'\t'<<ts<<'\t'<<(int)(msg->events[counter].polarity)<<'\t'<<(int)((positionClusterColor[point2Clusters[counter]])&(MAX_NUM_CLUSTERS-1))<<'\n';
-	#endif
+						  //segmentation.at<cv::Vec3b>(cv::Point(x,y))=RGBColors[(positionClusterColor[point2Clusters[counterOut]])&(MAX_NUM_CLUSTERS-1)]; //cheaper than % (mod operation)
 						  counterOut++;
 				  }
-				  //}
-				  //else
-				  //{
-				  //	  break;
-				  //}
+
 				  counterIn++;
 			  }
+			counterOut=0;
+			  for(int i=0; i<clustCentX.size(); i++)
+			  {
+				  	const int x = clustCentX[i]*DVSW;
+					const int y = clustCentY[i]*DVSH;
+				  	ROS_INFO("cluster center x %f , y %f", clustCentX[i], clustCentY[i]);
+					segmentation.at<cv::Vec3b>(cv::Point(x,y))=RGBColors[(positionClusterColor[point2Clusters[counterOut]])&(MAX_NUM_CLUSTERS-1)]; //cheaper than % (mod operation)
+					counterOut++;
 
-
-			  char filename2[80];
-			  sprintf(filename2,"/home/fran/0_tmp/kk/rgb_%0d.png", counterGlobal+1);
-			  cv::imwrite(filename2, segmentation);
-
-
-//		  }
-
-
+			  }
 		  cv_segments.encoding = "bgr8";
 		  cv_segments.image = segmentation;
 		  image_segmentation_pub_.publish(cv_segments.toImageMsg());
 
-		  //std::cin.ignore();
 
 		  beginEvent +=packet;
 
-//#if TEST
-		  //char filename[80];
-		  //sprintf(filename,"/home/fran/0_tmp/kk/rgb_%0d.jpg", counterGlobal+1);
-		  //cv::imwrite(filename , segmentation);
-		  //sprintf(filename,"/home/fran/0_tmp/kk/cc_%0d.txt", counterGlobal+1);
-		  //std::ofstream foutcc(filename);
-		  //for (int i = 0; i<clustCentX.size(); i++)
-		  //	  foutcc<<"ClusterCenter("<<i+1<<",:)=["<<clustCentX.at(i)*DVSW<<","<<clustCentY.at(i)*DVSH<<"];"<<std::endl;
-		  //foutcc.close();
-//#endif
-		  //Saving RGB image
-/*
-			if (counterGlobal>0)
-			{
-				//std::cin.ignore();
-				//for (int i = 0; i<clustCentX.size(); i++)
-				//	ROS_ERROR_STREAM("ClusterCenter("<<i+1<<",:)=["<<clustCentX.at(i)<<","<<clustCentY.at(i)<<","<<clustCentZ.at(i)<<"];");
-
-				//std::cout<<"clustperevent=["<<point2Clusters[0];
-				//for (int i = 1; i<point2Clusters.size(); i++)
-				//	std::cout<<","<<point2Clusters[i];
-				//std::cout<<"];"<<std::endl;
-
-				char filename[80];
-				sprintf(filename,"/home/fran/0_tmp/kk/RGB_%0d.png", counterGlobal+1);
-				cv::imwrite(filename , segmentation);
-				//exit(0);
-
-				//char filename[80];
-				//sprintf(filename,"/home/fran/0_tmp/kk/RGB_%0d.txt", counterGlobal+1);
-				//std::ofstream foutX(filename);
-				//foutX<<counter<<"\n";
-				//foutX.close();
-			}
-*/
-
-
-		  /*if(msg->events.size()>15e3)
-		  {
-			  char filename[80];
-			  sprintf(filename,"/home/fran/0_tmp/kk/RGB_%0d.png", counterGlobal+1);
-			  cv::imwrite(filename , segmentation);
-			  exit(0);
-		  }*/
 		  counterGlobal++;
 	  }
   }
@@ -1582,5 +1149,5 @@ void Meanshift::eventsCallback_simple(const dvs_msgs::EventArray::ConstPtr& msg)
 
 
 
-
+//
 } // namespace

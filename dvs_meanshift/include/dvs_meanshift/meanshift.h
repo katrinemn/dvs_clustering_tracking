@@ -27,12 +27,12 @@
 #include "graph3d/segment.h"
 
 #define TEST 0
-#define KALMAN_FILTERING 1
-#define BG_FILTERING 1
+#define KALMAN_FILTERING 0
+#define BG_FILTERING 0
 
 
-#define DVSW 128 //240
-#define DVSH 128 //180
+#define DVSW 240 //280 //240
+#define DVSH 180 //346 //180
 
 //#define DVSW 240
 //#define DVSH 180
