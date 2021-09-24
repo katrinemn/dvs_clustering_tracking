@@ -27,15 +27,12 @@
 #include "graph3d/segment.h"
 
 #define TEST 0
-#define KALMAN_FILTERING 0
-#define BG_FILTERING 0
+#define KALMAN_FILTERING 1
+#define BG_FILTERING 1
 
 
-#define DVSW 240 //280 //240
-#define DVSH 180 //346 //180
-
-//#define DVSW 240
-//#define DVSH 180
+#define DVSW 640//240
+#define DVSH 360 //180
 
 namespace dvs_meanshift
 {
@@ -76,11 +73,6 @@ private:
 
   cv::Mat last_image_;
   bool used_last_image_;
-
-  enum DisplayMethod
-  {
-    GRAYSCALE, RED_BLUE
-  } display_method_;
 
   //Meanshift params
   //computing image calibration

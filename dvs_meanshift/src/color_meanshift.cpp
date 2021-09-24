@@ -473,25 +473,13 @@ void meanshiftCluster_Gaussian(cv::Mat dataPts, std::vector<double> *clusterCent
 
 	while (numInitPts>0)
 	{
-		//ROS_ERROR_STREAM("iniPtInds");
-		//for(int i=0; i<initPtInds.size(); i++)
-		//	std::cerr<<initPtInds[i]<<" ";
-		//std::cerr<<std::endl;
-
-
 		tempInd = (rand()%numInitPts);								//pick a random seed point
-		//ROS_ERROR_STREAM("numInitPts ="<<numInitPts);
 
-		//std::cin.ignore();
 		stInd = initPtInds[tempInd];								//use this point as start of mean
-		/**********REMOVE THIS******************************/
-		//stInd = initPtInds[numInitPts-1];
-		/**********REMOVE THIS******************************/
 		myMeanX = dataPts.at<double>(cv::Point(stInd, 0));				//intilize mean to this points location
 		myMeanY = dataPts.at<double>(cv::Point(stInd, 1));
 		myMeanZ = dataPts.at<double>(cv::Point(stInd, 2));
 		cv::Mat thisClusterVotes = cv::Mat(1, numPts, CV_32S, cv::Scalar::all(0)); 	//used to resolve conflicts on cluster membership
-		//ROS_ERROR_STREAM("Before getting into while myMean = ["<<myMeanX<<", "<<myMeanY<<", "<<myMeanZ<<"]");
 		cv::Mat_<double> myMean = ( cv::Mat_<double>(3, 1) << myMeanX, myMeanY, myMeanZ);
 
 
@@ -500,38 +488,28 @@ void meanshiftCluster_Gaussian(cv::Mat dataPts, std::vector<double> *clusterCent
 			cv::Mat myDataPts;
 			dataPts.copyTo(myDataPts);
 
-			//ROS_ERROR_STREAM("Original = "<<diffX);
-			//ROS_ERROR_STREAM("onesAux.rows = "<<onesAux.rows<<" cols = "<<onesAux.cols);
-			//ROS_ERROR_STREAM("dataPts.rows = "<<dataPts.rows<<" cols = "<<dataPts.cols);
-			//ROS_ERROR_STREAM("myMean.rows = "<<myMean.rows<<" cols = "<<myMean.cols);
-
+			// get the difference between the data points and the mean
 			cv::Mat diff = myDataPts - myMean*onesAux;
+			// get the squared difference
 			cv::Mat diffdiff = diff.mul(diff);
 			cv::Mat sqDistToAll = diffdiff.row(0) +diffdiff.row(1) + diffdiff.row(2);	//dist squared from mean to all points still active
 
+			// give a vote for all points that are closter than the squared bandwitdth
 			cv::Mat inInds = (sqDistToAll < bandSq); 									// Puts 255 wherever it is true
 			cv::add(thisClusterVotes, cv::Scalar(1), thisClusterVotes, inInds); 			//add a vote for all the in points belonging to this cluster
 			cv::Mat mask3 = cv::repeat(inInds==0, 3, 1);
-
-			//ROS_ERROR_STREAM("BEFORE myMean = "<<myMean);
-			//ROS_ERROR_STREAM("sqDistToAll = "<<sqDistToAll);
-			//ROS_ERROR_STREAM("diffX = "<<diff.row(0));
-			//ROS_ERROR_STREAM("diffdiffX = "<<diffdiff.row(0));
-			//ROS_ERROR_STREAM("thisClusterVotes = "<<thisClusterVotes);
-			//ROS_ERROR_STREAM("dataPts = "<<dataPts);
 
 			myDataPts.setTo(0, mask3);
 			double numOfOnes = (double) (cv::sum(inInds)[0])/255; //inInds is active if inInds[i]==255
 
 			myOldMeanX = myMeanX; myOldMeanY = myMeanY; myOldMeanZ = myMeanZ;
-
+			 // update mean
 			myMeanX = cv::sum(myDataPts.row(0))[0]/numOfOnes;
 			myMeanY = cv::sum(myDataPts.row(1))[0]/numOfOnes;
 			myMeanZ = cv::sum(myDataPts.row(2))[0]/numOfOnes;
 
 			myMean = ( cv::Mat_<double>(3, 1) << myMeanX, myMeanY, myMeanZ);
 
-			//ROS_ERROR_STREAM("MIDDLE myMean = "<<myMean);
 
 			diff = myDataPts - myMean*onesAux;
 			diffdiff = diff.mul(diff);
@@ -550,25 +528,18 @@ void meanshiftCluster_Gaussian(cv::Mat dataPts, std::vector<double> *clusterCent
 			myMeanZ = cv::sum(wData.row(2))[0]/totalWeightZ;
 
 			myMean = ( cv::Mat_<double>(3, 1) << myMeanX, myMeanY, myMeanZ);
-			//ROS_ERROR_STREAM("AFTER: myMean = "<<myMeanX<<","<<myMeanY<<","<<myMeanZ);
-			//exit(0);
 
 			beenVisitedFlag.setTo(1, inInds);
-			//ROS_ERROR_STREAM("beenVisitedFlag = "<<beenVisitedFlag);
 
 			// if mean doesn't move much stop this cluster
-			//ROS_ERROR_STREAM("Norm = "<<(myMeanX-myOldMeanX)*(myMeanX-myOldMeanX) + (myMeanY-myOldMeanY)*(myMeanY-myOldMeanY) + (myMeanZ-myOldMeanZ)*(myMeanZ-myOldMeanZ));
 			if((myMeanX-myOldMeanX)*(myMeanX-myOldMeanX) + (myMeanY-myOldMeanY)*(myMeanY-myOldMeanY) + (myMeanZ-myOldMeanZ)*(myMeanZ-myOldMeanZ) < stopThresh*stopThresh)
 			{
 				//check for merge posibilities
-				//ROS_ERROR_STREAM("Dentro!! ");
 				int mergeWith = -1;
 				double distToOther;
 				for(int cN = 0; cN<numClust; cN++) //Careful!! cN goes from 1 to numClust!!!
 				{
 					double distToOther = (myMeanX - (*clusterCenterX)[cN])*(myMeanX - (*clusterCenterX)[cN]) + (myMeanY - (*clusterCenterY)[cN])*(myMeanY - (*clusterCenterY)[cN]) + (myMeanZ - (*clusterCenterZ)[cN])*(myMeanZ - (*clusterCenterZ)[cN]); //distance from posible new clust max to old clust max
-					//ROS_ERROR_STREAM("Dentro!! ");
-					//ROS_ERROR_STREAM("distToOther " <<distToOther);
 					if(distToOther < (bandwidth/2)*(bandwidth/2))  //if its within bandwidth/2 merge new and old
 					{
 						mergeWith = cN;
@@ -578,9 +549,6 @@ void meanshiftCluster_Gaussian(cv::Mat dataPts, std::vector<double> *clusterCent
 
 				if(mergeWith > -1)
 				{
-					//ROS_ERROR_STREAM("Merging cluster with #"<<mergeWith);
-					//ROS_ERROR_STREAM("NumClust = "<<numClust);
-					//exit(0);
 
 					(*clusterCenterX)[mergeWith] = 0.5*(myMeanX+(*clusterCenterX)[mergeWith]);
 					(*clusterCenterY)[mergeWith] = 0.5*(myMeanY+(*clusterCenterY)[mergeWith]);
@@ -589,12 +557,10 @@ void meanshiftCluster_Gaussian(cv::Mat dataPts, std::vector<double> *clusterCent
 					cv::Mat newClusterVotes = cv::Mat(clusterVotes.row(mergeWith)) + thisClusterVotes;
 					newClusterVotes.copyTo(clusterVotes.row(mergeWith));
 
-					//ROS_ERROR_STREAM("clusterVotes = "<<clusterVotes);
-					//exit(0);
 				}
 				else
 				{
-					//ROS_ERROR_STREAM("Creating new cluster");
+					//Creating new cluster
 					(*clusterCenterX).push_back(myMeanX);                       //record the mean
 					(*clusterCenterY).push_back(myMeanY);
 					(*clusterCenterZ).push_back(myMeanZ);
@@ -602,11 +568,6 @@ void meanshiftCluster_Gaussian(cv::Mat dataPts, std::vector<double> *clusterCent
 
 					clusterVotes.push_back(thisClusterVotes);                           // add the new row for the new cluster
 
-					//ROS_ERROR_STREAM("clusterVotes = "<<clusterVotes);
-					//ROS_ERROR_STREAM("ClusterCenterX = "<<(*clusterCenterX)[numClust-1]);
-					//ROS_ERROR_STREAM("ClusterCenterY = "<<(*clusterCenterY)[numClust-1]);
-					//ROS_ERROR_STREAM("ClusterCenterZ = "<<(*clusterCenterZ)[numClust-1]);
-					//exit(0);
 				}
 				break;
 			}
@@ -630,8 +591,6 @@ void meanshiftCluster_Gaussian(cv::Mat dataPts, std::vector<double> *clusterCent
 		(*point2Clusters).push_back(maxLoc.x);
 	}
 
-	//ROS_ERROR_STREAM("Number of clusters " <<numClust<<" and "<<(*clusterCenterX).size());
-	//ROS_ERROR_STREAM("Tclusters rows " <<TclusterVotes.rows<<" cols "<<TclusterVotes.cols);
 }
 
 void colorMeanShiftFilt(double *newPixelsPtr, const double *pixelsPtr, int mPixels, int maxPixelDim, const double *imagePtr, int numRows, int numCols, float spaceDivider, char *kernelFun, int maxIterNum, float tolFun)

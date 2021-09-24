@@ -17,52 +17,8 @@ const int MAX_DISTANCE = 500; //actually the real distance is sqrt(MAX_DISTANCE)
 bool firstevent = true;
 double firsttimestamp;
 
-//std::ofstream foutX("/home/fran/0_tmp/kk/shapes_rotation_totalevents.txt");
-//std::ofstream fouttotalproc("/home/fran/0_tmp/kk/shapes_rotation_totalprocessing_f.txt");
-//std::ofstream foutX("/home/fran/0_tmp/kk/shapes_rotation_2_totalevents.txt");
-//std::ofstream fouttotalproc("/home/fran/0_tmp/kk/shapes_rotation_2_totalprocessing_f.txt");
-//std::ofstream foutX("/home/fran/0_tmp/kk/shapes_translation_totalevents.txt");
-//std::ofstream fouttotalproc("/home/fran/0_tmp/kk/shapes_translation_totalprocessing_f.txt");
-//std::ofstream foutX("/home/fran/0_tmp/kk/shapes_translation_2_totalevents.txt");
-//std::ofstream fouttotalproc("/home/fran/0_tmp/kk/shapes_translation_2_totalprocessing_f.txt");
-//std::ofstream foutX("/home/fran/0_tmp/kk/shapes_6dof_totalevents.txt");
-//std::ofstream fouttotalproc("/home/fran/0_tmp/kk/shapes_6dof_totalprocessing_f.txt");
-//std::ofstream foutX("/home/fran/0_tmp/kk/shapes_6dof_2_totalevents.txt");
-//std::ofstream fouttotalproc("/home/fran/0_tmp/kk/shapes_6dof_2_totalprocessing_f.txt");
-//std::ofstream foutnumclust("/home/fran/0_tmp/kk/shapes_translation_numclusters_f.txt");
-//std::ofstream foutnumclust("/home/fran/0_tmp/kk/shapes_rotation_numclusters_f.txt");
-//std::ofstream foutnumclust("/home/fran/0_tmp/kk/shapes_6dof_numclusters_f.txt");
-//std::ofstream foutnumclust("/home/fran/0_tmp/kk/shapes_6dof_2_numclusters_f.txt");
-//std::ofstream foutnumclust("/home/fran/0_tmp/kk/shapes_rotation_2_numclusters_f.txt");
-//std::ofstream foutnumclust("/home/fran/0_tmp/kk/shapes_translation_2_numclusters_f.txt");
-
-#if KALMAN_FILTERING
-std::ofstream foutX("/home/fran/0_tmp/kk/traj.txt");
-//std::ofstream foutX_estim("/home/fran/0_tmp/kk/filt_traj.txt");
-//std::ofstream foutT("/home/fran/0_tmp/kk/timetraj.txt");
-#endif
 
 namespace dvs_meanshift {
-
-void writeMatToFile(cv::Mat & m, const char* filename)
-{
-    std::ofstream fout(filename);
-
-    if(!fout)
-    {
-        std::cout<<"File Not Opened"<<std::endl;  return;
-    }
-
-    for(int i=0; i<m.rows; i++)
-    {
-        for(int j=0; j<m.cols; j++)
-        {
-            fout<<m.at<double>(i,j)<<"\t";
-        }
-        fout<<std::endl;
-    }
-    fout.close();
-}
 
 class Parallel_pixel_cosine: public cv::ParallelLoopBody
 {
@@ -108,11 +64,6 @@ void meshgrid(const cv::Mat &xgv, const cv::Mat &ygv, cv::Mat1i &X, cv::Mat1i &Y
 void findClosestCluster(std::vector<int> * clustID, std::vector<double> clustX, std::vector<double> clustY,std::vector<double>clustX_old,std::vector<double> clustY_old)
 {
 
-	//for (int i = 0; i<clustX.size(); i++)
-	//	ROS_ERROR_STREAM("ClusterCenter("<<i+1<<",:)=["<<clustX.at(i)<<","<<clustY.at(i)<<"];");
-	//for (int i = 0; i<clustX_old.size(); i++)
-	//	ROS_ERROR_STREAM("prev_ClusterCenter("<<i+1<<",:)=["<<clustX_old.at(i)<<","<<clustY_old.at(i)<<"];");
-
 	std::vector<double> distvalue (clustX.size());
 	double tmp;
 
@@ -127,41 +78,11 @@ void findClosestCluster(std::vector<int> * clustID, std::vector<double> clustX, 
 			{
 				distvalue[i]=tmp;
 				(*clustID)[i]=j;
-				//ROS_ERROR_STREAM("Cluster "<<i+1<<" same than old cluster "<<j+1<<". Distance = "<<distvalue[i]);
 			}
 		}
 	}
 }
 
-/*
-void Meanshift::assignClusterColor(std::vector<int> * positionClusterColor, int numClusters, std::vector<int> matches, std::vector<int> oldPositions)
-{
-
-	if (matches.size()==0) //no mask --> assing all new colors
-	{
-		for(int i=0; i<numClusters; i++)
-		{
-			(*positionClusterColor).push_back(lastPositionClusterColor);
-			lastPositionClusterColor = lastPositionClusterColor+1;
-		}
-	}
-	else
-	{
-		for(int i=0; i<numClusters; i++)
-		{
-			if(matches[i]==-1) //No match with previous clusters --> new cluster, new color
-			{
-				(*positionClusterColor).push_back(lastPositionClusterColor);
-				lastPositionClusterColor = lastPositionClusterColor+1;
-			}
-			else //Match with previous cluster --> assign color of previous cluster
-			{
-				(*positionClusterColor).push_back(oldPositions[matches[i]]);
-			}
-		}
-
-	}
-}*/
 
 void Meanshift::assignClusterColor(std::vector<int> * positionClusterColor, int numClusters, std::vector<int> matches, std::vector<int> oldPositions, std::vector<int> activeTrajectories)
 {
@@ -180,9 +101,9 @@ void Meanshift::assignClusterColor(std::vector<int> * positionClusterColor, int 
 		{
 			if(matches[i]==-1) //No match with previous clusters --> new cluster, new color
 			{
-				//Check if the new position is being used
-				while ( activeTrajectories.end() != find (activeTrajectories.begin(), activeTrajectories.end(), (lastPositionClusterColor & (MAX_NUM_CLUSTERS-1))))
-					lastPositionClusterColor++;
+				////Check if the new position is being used
+				//while ( activeTrajectories.end() != find (activeTrajectories.begin(), activeTrajectories.end(), (lastPositionClusterColor & (MAX_NUM_CLUSTERS-1))))
+				//	lastPositionClusterColor++;
 
 				(*positionClusterColor).push_back(lastPositionClusterColor);
 				lastPositionClusterColor = lastPositionClusterColor+1;
@@ -203,12 +124,10 @@ Meanshift::Meanshift(ros::NodeHandle & nh, ros::NodeHandle nh_private) : nh_(nh)
   // get parameters of display method
   std::string display_method_str;
   nh_private.param<std::string>("display_method", display_method_str, "");
-  display_method_ = (display_method_str == std::string("grayscale")) ? GRAYSCALE : RED_BLUE;
-
   // setup subscribers and publishers
   //event_sub_ = nh_.subscribe("events", 1, &Meanshift::eventsCallback, this);
-  event_sub_ = nh_.subscribe("events", 1, &Meanshift::eventsCallback_simple, this);
-  camera_info_sub_ = nh_.subscribe("camera_info", 1, &Meanshift::cameraInfoCallback, this);
+  event_sub_ = nh_.subscribe("events", 100, &Meanshift::eventsCallback_simple, this);
+  camera_info_sub_ = nh_.subscribe("camera_info", 100, &Meanshift::cameraInfoCallback, this);
 
   image_transport::ImageTransport it_(nh_);
   
@@ -317,11 +236,6 @@ Meanshift::~Meanshift()
 {
   delete [] initializationPtr;
 
-#if KALMAN_FILTERING
-  foutX.close();
-  //foutX_estim.close();
-  //foutT.close();
-#endif
   image_pub_.shutdown();  
   image_segmentation_pub_.shutdown();
   image_debug1_pub_.shutdown();
@@ -451,522 +365,177 @@ void Meanshift::createKalmanFilter(cv::KalmanFilter *kf, cv::Mat *state, cv::Mat
 	cv::setIdentity(kf->measurementNoiseCov, cv::Scalar(1e-1));
 }
 
-
-
-void Meanshift::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg)
-{
-  // only create image if at least one subscriber
-  if (image_pub_.getNumSubscribers() > 0)
-  {
-    cv_bridge::CvImage cv_image;
-
-    if (display_method_ == RED_BLUE)
-    {
-      cv_image.encoding = "bgr8";
-
-      if (last_image_.rows == msg->height && last_image_.cols == msg->width)
-      {
-        last_image_.copyTo(cv_image.image);
-        used_last_image_ = true;
-      }
-      else
-      {
-        cv_image.image = cv::Mat(msg->height, msg->width, CV_8UC3);
-        cv_image.image = cv::Scalar(128, 128, 128);
-      }
-
-      for (int i = 0; i < msg->events.size(); ++i)
-      {
-        const int x = msg->events[i].x;
-        const int y = msg->events[i].y;
-
-        cv_image.image.at<cv::Vec3b>(cv::Point(x, y)) = (
-            msg->events[i].polarity == true ? cv::Vec3b(255, 0, 0) : cv::Vec3b(0, 0, 255));
-      }
-    }
-    else
-    {
-      cv_image.encoding = "mono8";
-      cv_image.image = cv::Mat(msg->height, msg->width, CV_8U);
-      cv_image.image = cv::Scalar(128);
-
-      cv::Mat on_events = cv::Mat(msg->height, msg->width, CV_8U);
-      on_events = cv::Scalar(0);
-
-      cv::Mat off_events = cv::Mat(msg->height, msg->width, CV_8U);
-      off_events = cv::Scalar(0);
-
-      // count events per pixels with polarity
-      for (int i = 0; i < msg->events.size(); ++i)
-      {
-        const int x = msg->events[i].x;
-        const int y = msg->events[i].y;
-
-        if (msg->events[i].polarity == 1)
-          on_events.at<uint8_t>(cv::Point(x, y))++;
-        else
-          off_events.at<uint8_t>(cv::Point(x, y))++;
-      }
-
-      // scale image
-      cv::normalize(on_events, on_events, 0, 128, cv::NORM_MINMAX, CV_8UC1);
-      cv::normalize(off_events, off_events, 0, 127, cv::NORM_MINMAX, CV_8UC1);
-
-      cv_image.image += on_events;
-      cv_image.image -= off_events;
-    }
-      image_pub_.publish(cv_image.toImageMsg());
-  }
-
-  if (image_segmentation_pub_.getNumSubscribers() > 0)
-  {
-	  cv_bridge::CvImage cv_segments;
-	  //cv_bridge::CvImage cv_debug1;
-	  //cv_bridge::CvImage cv_debug2;
-
-
-	//Doing color meanshift
-	cv::Mat timestamp_matrix = cv::Mat(numRows, numCols, CV_64F);
-	timestamp_matrix = cv::Scalar(0.);
-	cv::Mat timestamp_matrix_out;
-
-	//Reading time of first event and saving it
-	//ROS_ERROR("Reading values from timestamp_matrix_out: %d", (int) msg->events.size());
-	uint64_t first_timestamp = msg->events[0].ts.toNSec();
-	// count events per pixels with polarity
-	for (int i = 0; i < msg->events.size(); ++i)
-	{
-		const int x = msg->events[i].x;
-		const int y = msg->events[i].y;
-
-		double event_timestamp =  (0.001*(double)(msg->events[i].ts.toNSec()-first_timestamp));//now in usecs
-
-		if (msg->events[i].polarity == 1)
-		  timestamp_matrix.at<double>(cv::Point(x, y))= event_timestamp*0.001;
-		else
-		  timestamp_matrix.at<double>(cv::Point(x, y))=-event_timestamp*0.001;
-	}
-
-	//First create the interface and
-	//cv_debug1.image =result_image;
-	//cv::Mat img_hist_equalized;
-	//cv::equalizeHist(result_image, img_hist_equalized); //equalize the histogram
-	//cv_debug1.image = img_hist_equalized;
-
-
-
-	//POISSON SOLVER IMPLEMENTATION
-	/*----------------------------------------------------------------------------* /
-	cv::Mat debugIm1= cv::Mat(numRows, numCols, CV_8UC1);
-
-	double min, max;
-	cv::minMaxLoc(timestamp_matrix, &min, &max);
-
-	cv::normalize(timestamp_matrix, debugIm1, 0, 255, cv::NORM_MINMAX, CV_8UC1);
-
-	// Here, we are assuming that our image is a gradient already (gx and gy)
-	cv::Mat gxx = cv::Mat(numRows, numCols, CV_64F);
-	cv::Mat gyy = cv::Mat(numRows, numCols, CV_64F);
-
-	cv::Mat tmp;
-	debugIm1.convertTo(tmp, CV_64F);
-	tmp = (tmp/255)*(max-min)+min;
-
-
-	lapx(tmp, gxx);
-	lapy(tmp, gyy);
-
-	cv::Mat lapfnc = cv::Mat(numRows, numCols, CV_64F);
-	cv::Mat fcos = cv::Mat(numRows, numCols, CV_64F);
-	cv::Mat denom = cv::Mat(numRows, numCols, CV_64F);
-	cv::Mat output = cv::Mat(numRows, numCols, CV_64F);
-	lapfnc = gxx+gyy;
-	cv::dct(lapfnc, fcos);
-
-	cv::Mat1i XX, YY;
-	cv::Mat XX_bis, YY_bis;
-	meshgridTest(cv::Range(0,numCols-1), cv::Range(0, numRows-1), XX, YY);
-
-	XX.convertTo(XX_bis, CV_64F); YY.convertTo(YY_bis, CV_64F);
-	XX_bis = CV_PI*XX_bis/numCols; YY_bis=CV_PI*YY_bis/numRows;
-
-	parallel_for_(cv::Range(0,XX_bis.rows), Parallel_pixel_cosine(XX_bis));
-	parallel_for_(cv::Range(0,YY_bis.rows), Parallel_pixel_cosine(YY_bis));
-
-	denom = 2*XX_bis-2 + 2*YY_bis-2;
-
-	double first_elem =fcos.at<double>(cv::Point(0, 0));
-	cv::divide(fcos, denom, fcos);
-	fcos.at<double>(cv::Point(0, 0))=first_elem; // remove the Inf
-
-	cv::idct(fcos, output);
-	double min_bis, max_bis;
-	cv::minMaxLoc(output, &min_bis, &max_bis);
-	output = output - min_bis;
-	cv::Mat result_image, output_norm;
-	cv::normalize(output, output_norm, 0, 255, cv::NORM_MINMAX, CV_8UC1);
-
-	cv::medianBlur(output_norm,result_image,3);
-	/*----------------------------------------------------------------------------*/
-	//Alternatively, one can use only the time
-	cv::Mat result_image;
-	cv::normalize(timestamp_matrix, result_image, 0, 255, cv::NORM_MINMAX, CV_8UC1);
-	/*----------------------------------------------------------------------------*/
-
-	//cv::Mat kk1;
-	//result_image.convertTo(kk1, CV_64F);
-	//writeMatToFile(kk1,"/home/fran/kk1.txt");
-
-	//cv_debug1.encoding = "mono8";
-	//cv_debug1.image = result_image;
-	//image_debug1_pub_.publish(cv_debug1.toImageMsg());
-
-	cv::Mat temporalIm, temporalImSubsampled;
-	result_image.convertTo(temporalIm, CV_64F);
-	temporalIm = temporalIm/timeDivider;
-	cv::pyrDown(temporalIm, temporalImSubsampled, cv::Size(numCols/2, numRows/2));
-	//Initialize positions (only once)
-	outputFeatures=new double[maxPixelDim*mPixels/4];
-	pixelsPtr=new double[maxPixelDim*mPixels/4];
-	imagePtr=new double[mPixels/4];
-
-	memcpy(pixelsPtr, initializationPtr, maxPixelDim*mPixels/4*sizeof(double)); //copy event the 0s image
-	memcpy(pixelsPtr+2*mPixels/4, (void*)(temporalImSubsampled.data), mPixels/4*sizeof(double)); //copy event the 0s image
-	memcpy(imagePtr, (void*)(temporalImSubsampled.data), mPixels/4*sizeof(double)); //copy event the 0s image
-
-	//extract the features
-	colorMeanShiftFilt(outputFeatures, pixelsPtr, mPixels/4, maxPixelDim, imagePtr, \
-			numRows/2, numCols/2, spaceDivider, kernelFun, maxIterNum, tolFun);
-
-	cv::Mat meanshiftIm;
-	cv::Mat meanshiftIm_small = cv::Mat(numRows/2, numCols/2, CV_64F, outputFeatures+2*mPixels/4);
-	meanshiftIm_small = meanshiftIm_small*timeDivider;
-	cv::pyrUp(meanshiftIm_small, meanshiftIm, cv::Size(numCols, numRows));
-
-	//cv::Mat kk = cv::Mat(numRows, numCols, CV_64F, imagePtr);
-	//kk = kk*timeDivider;
-	//writeMatToFile(kk,"/home/fran/imagePtr.txt");
-
-	//do the segmentation
-//	cv::Mat filtered_im = cv::Mat(numRows, numCols, CV_64F, outputFeatures+2*mPixels);
-//	filtered_im = filtered_im*timeDivider;
-	cv::Mat meanshiftImNormalized;
-	//meanshift_im.convertTo(meanshift_im_normalized,CV_8UC1);
-	cv::normalize(meanshiftIm, meanshiftImNormalized, 0, 255, cv::NORM_MINMAX, CV_8UC1);
-
-	//cv_debug2.encoding = "mono8";
-	//cv_debug2.image = meanshift_im_normalized;
-	//image_debug2_pub_.publish(cv_debug2.toImageMsg());
-
-	//meanshift_im_normalized= cv::imread("/home/fran/mug.pgm", CV_LOAD_IMAGE_GRAYSCALE);
-
-	//tmp has the values that are non-zero
-
-	cv_segments.encoding = "bgr8";
-	cv_segments.image =cv::Mat(numRows, numCols, CV_8UC3);
-	//cv_segments.image =cv::Mat(128, 128, CV_8UC3);
-	im2segment(meanshiftImNormalized, cv_segments.image, sigma, k, min_region, &num_components);
-	image_segmentation_pub_.publish(cv_segments.toImageMsg());
-
-	//cv::Mat mask;
-	//mask = (abs(timestamp_matrix) > 1E-6); // Puts 255 wherever it is true
-	//mask.convertTo(mask, CV_64F);
-	//writeMatToFile(mask,"/home/fran/mask.txt");
-
-	//cv::Mat finalOutput;
-	//cv::bitwise_and(cv_segments.image, cv::Scalar(255,255,255), finalOutput, mask);
-	//cv_segments.image = finalOutput;
-	//image_debug2_pub_.publish(cv_segments.toImageMsg());
-	//-------------------------------------------------------------------------------------
-
-	delete[] imagePtr;
-	delete [] outputFeatures;
-	delete [] pixelsPtr;
-  }
-}
-
-
 void Meanshift::eventsCallback_simple(const dvs_msgs::EventArray::ConstPtr& msg)
 {
-  // only create image if at least one subscriber
-  ROS_INFO("event callback height %d width %d", msg->height, msg->width);
-  if (image_pub_.getNumSubscribers() > 0)
-  {
-    cv_bridge::CvImage cv_image;
+	// only create image if at least one subscriber
+	//ROS_INFO("event callback height %d width %d", msg->height, msg->width);
+	// color the events and publish them so we see the events nicely 
+	cv_bridge::CvImage cv_image;  
+	cv_image.encoding = "bgr8";  
+	if (last_image_.rows == msg->height && last_image_.cols == msg->width)
+	{
+	  last_image_.copyTo(cv_image.image);
+	  used_last_image_ = true;
+	}
+	else
+	{
+	  cv_image.image = cv::Mat(msg->height, msg->width, CV_8UC3);
+	  cv_image.image = cv::Scalar(128, 128, 128);
+	}  
+	for (int i = 0; i < msg->events.size(); ++i)
+	{
+	  // if the polarity is positive color red else blue
+	  const int x = msg->events[i].x;
+	  const int y = msg->events[i].y;  
+	  cv_image.image.at<cv::Vec3b>(cv::Point(x, y)) = (
+	      msg->events[i].polarity == true ? cv::Vec3b(255, 0, 0) : cv::Vec3b(0, 0, 255));
+	}  	
+	image_pub_.publish(cv_image.toImageMsg());
 
-    if (display_method_ == RED_BLUE)
-    {
-      cv_image.encoding = "bgr8";
+	// prepare segmentation image
+	cv_bridge::CvImage cv_segments;
+	// get the time stamp of the first event
+	uint64_t first_timestamp = msg->events[0].ts.toNSec();
 
-      if (last_image_.rows == msg->height && last_image_.cols == msg->width)
-      {
-        last_image_.copyTo(cv_image.image);
-        used_last_image_ = true;
-      }
-      else
-      {
-        cv_image.image = cv::Mat(msg->height, msg->width, CV_8UC3);
-        cv_image.image = cv::Scalar(128, 128, 128);
-      }
+	// get the timestamp of the last event
+	double final_timestamp =  (1E-6*(double)(msg->events[(msg->events.size())-1].ts.toNSec()-first_timestamp));
+	// always have the active events
+	std::vector<bool> activeEvents(msg->events.size());
 
-      for (int i = 0; i < msg->events.size(); ++i)
-      {
-        const int x = msg->events[i].x;
-        const int y = msg->events[i].y;
-
-        cv_image.image.at<cv::Vec3b>(cv::Point(x, y)) = (
-            msg->events[i].polarity == true ? cv::Vec3b(255, 0, 0) : cv::Vec3b(0, 0, 255));
-      }
-
-      //Write the total number of events
-      //foutX<<msg->events.size()<<std::endl;
-    }
-    else
-    {
-      cv_image.encoding = "mono8";
-      cv_image.image = cv::Mat(msg->height, msg->width, CV_8U);
-      cv_image.image = cv::Scalar(128);
-
-      cv::Mat on_events = cv::Mat(msg->height, msg->width, CV_8U);
-      on_events = cv::Scalar(0);
-
-      cv::Mat off_events = cv::Mat(msg->height, msg->width, CV_8U);
-      off_events = cv::Scalar(0);
-
-      // count events per pixels with polarity
-      for (int i = 0; i < msg->events.size(); ++i)
-      {
-        const int x = msg->events[i].x;
-        const int y = msg->events[i].y;
-
-        if (msg->events[i].polarity == 1)
-          on_events.at<uint8_t>(cv::Point(x, y))++;
-        else
-          off_events.at<uint8_t>(cv::Point(x, y))++;
-      }
-
-        // scale image
-      cv::normalize(on_events, on_events, 0, 128, cv::NORM_MINMAX, CV_8UC1);
-      cv::normalize(off_events, off_events, 0, 127, cv::NORM_MINMAX, CV_8UC1);
-
-      cv_image.image += on_events;
-      cv_image.image -= off_events;
-    }
-      image_pub_.publish(cv_image.toImageMsg());
-  }
+	int counterIn = 0;
+	int counterOut = 0;
+	int beginEvent = 0;
+	int packet = 1800;
 
 
-  if (image_segmentation_pub_.getNumSubscribers() > 0)
-  {
-	  cv_bridge::CvImage cv_segments;
+	while(beginEvent < msg->events.size())
+	{
 
-	  uint64_t first_timestamp = msg->events[0].ts.toNSec();
-	  double final_timestamp =  (1E-6*(double)(msg->events[(msg->events.size())-1].ts.toNSec()-first_timestamp));
-	  std::vector<bool> activeEvents(msg->events.size());
-
-	  int counterIn = 0;
-	  int counterOut = 0;
-
-	  int beginEvent = 0;
-	  int packet;
-	  if(DVSW==240)
-		packet = 1800;
-	  else
-		packet = 1500;
-	  //ROS_ERROR_STREAM("Before while");
-
-
-	  while(beginEvent < msg->events.size())
-	  {
-		  counterIn = 0;
-		  counterOut = 0;
-		  cv::Mat data=cv::Mat(3, min(packet, msg->events.size()-beginEvent), CV_64F, cv::Scalar::all(0.));
-
-
-		  if(firstevent)
-		  {
-			firsttimestamp = (1E-6*(double)(msg->events[10].ts.toNSec()));
+	  	counterIn = 0;
+	  	counterOut = 0;
+	  	// handle a smaller amount of data
+	  	cv::Mat data=cv::Mat(3, min(packet, msg->events.size()-beginEvent), CV_64F, cv::Scalar::all(0.));
+	  	if(firstevent)
+	  	{
+			firsttimestamp = (1E-6*(double)(msg->events[0].ts.toNSec()));
 			firstevent = false;
-		  }
+	  	}
+	  	double maxTs;
+	  	int posx, posy;
+	  	double usTime = 1000.0;
+	  	double ts;
 
-		  double maxTs;
-		  int posx, posy;
-		  double usTime = 10.0;
-		  double ts;
+	  	for (int i = beginEvent; i < min(beginEvent+packet, msg->events.size()); i++)
+	  	{
+		  	//select a smaller amount of events, size of the packet
+		  	const int x = msg->events[counterIn].x;
+		  	const int y = msg->events[counterIn].y;
+			
+		  	//get the current time stamp
+		  	double event_timestamp =  (1E-6*(double)(msg->events[counterIn].ts.toNSec()-first_timestamp));//now in usecs
+		  	// get the time that has passed
+		  	ts = (1E-6*(double)(msg->events[i].ts.toNSec())) - firsttimestamp;
 
 
+			#if BG_FILTERING // for each event, check all the neighboring events and remove the old ones
 
-		  for (int i = beginEvent; i < min(beginEvent+packet, msg->events.size()); i++)
-		  {
-			  //SELECT SMALL PACKETS OF MAXIMUM 1000 events
-			  const int x = msg->events[counterIn].x;
-			  const int y = msg->events[counterIn].y;
-
-			  double event_timestamp =  (1E-6*(double)(msg->events[counterIn].ts.toNSec()-first_timestamp));//now in usecs
-
-			  ts = (1E-6*(double)(msg->events[i].ts.toNSec())) - firsttimestamp;
-#if BG_FILTERING
-			  //BGAFframe.at<float>(cv::Point(x,y))=(float)(1E-6*(double)(msg->events[i].ts.toNSec()));
-			  BGAFframe.at<float>(cv::Point(x,y))=0.;
-			  maxTs = -1;
-			  //calculate maximum in a 3x3 neighborhood
-			  for(int ii=-1; ii<=1; ii++)
-				  for(int jj=-1; jj<=1; jj++)
-				  {
-					  posx = x + ii;
-					  posy = y + jj;
-					  if(posx<0)
+		  	BGAFframe.at<float>(cv::Point(x,y))=0.;
+		  	maxTs = -1;
+		  	//calculate maximum time in a 3x3 neighborhood
+			for(int ii=-1; ii<=1; ii++)
+			{  
+				for(int jj=-1; jj<=1; jj++)
+			  	{
+				  	posx = x + ii;
+				  	posy = y + jj;
+				  	if(posx<0)
 						  posx = 0;
-					  if(posy<0)
+				  	if(posy<0)
 						  posy=0;
-					  if(posx>numRows-1)
+				  	if(posx>numRows-1)
 						  posx = numRows-1;
-					  if(posy>numCols-1)
+				  	if(posy>numCols-1)
 						  posy = numCols-1;
-
-					  if(BGAFframe.at<float>(cv::Point(posx,posy)) > maxTs)
+				  	if(BGAFframe.at<float>(cv::Point(posx,posy)) > maxTs)
 						  maxTs = BGAFframe.at<float>(cv::Point(posx,posy));
-				  }
+				}
+			}
 
-			  BGAFframe.at<float>(cv::Point(x,y))=ts;
-			  //if nothing happened in usTime, remove the event
-			  if(BGAFframe.at<float>(cv::Point(x,y)) >= (maxTs + usTime))
+			BGAFframe.at<float>(cv::Point(x,y))=ts;
+			//if nothing happened in usTime, remove the event
+			if(BGAFframe.at<float>(cv::Point(x,y)) >= (maxTs + usTime))
+			{
+			  activeEvents.at(counterIn)=false;
+			  counterIn++;
+			}
+			else
+			{
+			#endif
+				// normalize position in data 
+				data.at<double>(cv::Point(counterOut, 0))= (double)x/numCols;
+				data.at<double>(cv::Point(counterOut, 1))= (double)y/numRows;
+				//data.at<double>(cv::Point(counterOut, 2))= event_timestamp/final_timestamp;//normalized
+				double tau = 10000;
+				data.at<double>(cv::Point(counterOut, 2))= exp(-(final_timestamp-event_timestamp)/tau);//normalized
+				activeEvents.at(counterIn)=true;
+				counterIn++;
+				counterOut++;
+			#if BG_FILTERING
+			}
+			#endif
+		  	}
+		  	// get the most recent time stamp
+		  	double last_timestamp =  (1E-6*(double)(msg->events[counterIn-1].ts.toNSec()));//now in usecs
+
+		  	// prepare the cluster centers and the output image
+		  	cv::Mat clusterCenters;
+		  	cv::Mat segmentation=cv::Mat(numRows, numCols, CV_8UC3);
+		  	segmentation = cv::Scalar(128,128,128);
+
+		  	cv::Mat traj = cv::Mat(numRows, numCols, CV_8UC3);
+		  	traj = cv::Scalar(128,128,128);
+
+		  	std::vector<double> clustCentX, clustCentY, clustCentZ;
+		  	std::vector<int> point2Clusters;
+		  	std::vector<int> positionClusterColor;
+		  	std::vector<int> assign_matches;
+
+
+		  	double bandwidth = 0.15;
+			// do the clutering
+		  	meanshiftCluster_Gaussian(data, &clustCentX, &clustCentY, &clustCentZ, &point2Clusters, bandwidth);
+
+			//Assign new color or use color from previous clusters?
+			//if(counterGlobal>0)//not the first time
+			findClosestCluster(&assign_matches, clustCentX, clustCentY, prev_clustCentX, prev_clustCentY); //no match when clustID is -1
+
+			assignClusterColor(&positionClusterColor, clustCentX.size(), assign_matches, prev_positionClusterColor, prev_activeTrajectories); //assign new colors to clusters
+
+
+			int tmpColorPos;
+			float estimClustCenterX=-1., estimClustCenterY=-1.;
+			std::vector<int> activeTrajectories;
+
+			if(point2Clusters.size()>100) //update positions only when there is enough change (>25%)
+			{
+			  for(int i=0; i<clustCentX.size(); i++)
 			  {
-				  activeEvents.at(counterIn)=false;
-				  counterIn++;
-			  }
-			  else
-			  {
-#endif
-				  data.at<double>(cv::Point(counterOut, 0))= (double)x/numCols;
-				  data.at<double>(cv::Point(counterOut, 1))= (double)y/numRows;
-				  //data.at<double>(cv::Point(counter, 2))= event_timestamp/final_timestamp;//normalized
-				  double tau = 10000;
-				  data.at<double>(cv::Point(counterOut, 2))= exp(-(final_timestamp-event_timestamp)/tau);//normalized
-				  activeEvents.at(counterIn)=true;
-				  counterIn++;
-				  counterOut++;
-#if BG_FILTERING
-			  }
-#endif
+				  estimClustCenterX=-1., estimClustCenterY=-1.;
 
+				  tmpColorPos = (positionClusterColor[i])&(MAX_NUM_CLUSTERS-1);
 
+				  //Check if the new position is being used
+				  /*int idx = 0;
+				  for (int idx=0; idx<prev_activeTrajectories.size(); idx++)
+					  if(tmpColorPos == prev_activeTrajectories[idx])
+						  break;*/
+				  std::vector<int>::iterator it;
 
-			  //foutX<<x<<"\t"; foutY<<y<<"\t"; foutTime<<event_timestamp<<"\t";
-		  }
-		  double last_timestamp =  (1E-6*(double)(msg->events[counterIn-1].ts.toNSec()));//now in usecs
-		  //foutX.close(); foutY.close(); foutTime.close();
+				  it = find (prev_activeTrajectories.begin(), prev_activeTrajectories.end(), tmpColorPos);
 
-		  cv::Mat clusterCenters;
-		  cv::Mat segmentation=cv::Mat(numRows, numCols, CV_8UC3);
-		  segmentation = cv::Scalar(128,128,128);
-
-		  cv::Mat traj = cv::Mat(numRows, numCols, CV_8UC3);
-		  traj = cv::Scalar(128,128,128);
-
-		  std::vector<double> clustCentX, clustCentY, clustCentZ;
-		  std::vector<int> point2Clusters;
-		  std::vector<int> positionClusterColor;
-		  std::vector<int> assign_matches;
-
-
-		  //double bandwidth = 0.05;
-		  double bandwidth = 0.15;
-		  //double bandwidth = 0.15;
-		  //double bandwidth = 0.20;
-		  //double bandwidth = 0.25;
-		  //double bandwidth = 0.50;
-		  //cv::RNG rng(12345);
-
-/*		  if(counterGlobal==0)
-		  {
-			  //clock_t start, end;
-			  //double elapsed;
-			  //start = clock();
-			  //clustCentZ_old = clustCentZ;
-
-			  meanshiftCluster_Gaussian(data, &clustCentX, &clustCentY, &clustCentZ, &point2Clusters, bandwidth);
-
-			  assignClusterColor(&positionClusterColor, clustCentX.size(), assign_matches, prev_positionClusterColor); //assign new colors to clusters
-
-			  prev_clustCentX = clustCentX;
-			  prev_clustCentY = clustCentY;
-			  prev_positionClusterColor = positionClusterColor;
-			  //std::vector<int> checkvector (clustCentX.size(), -1);
-			  //ROS_ERROR_STREAM("Total number of clusters is "<<clustCentX.size());
-
-
-			  //end = clock();
-			  //elapsed = ((double) (end - start)) / CLOCKS_PER_SEC;
-			  //ROS_ERROR_STREAM("Num. packets = "<<data.cols<<" elapsed time = "<<elapsed<<". Time/packet = "<<elapsed/data.cols);
-
-			  //Moved to initialization
-			  //Now, draw the different segments with a color
-			  //for(int i=0; i<clustCentX.size(); i++)
-			  //	 RGBColors.push_back(cv::Vec3b((uchar)random(), (uchar)random(), (uchar)random()));
-
-			  counter =0;
-			  for (int i = beginEvent; i < min(beginEvent+packet, msg->events.size()); i++)
-			  {
-				  const int x = msg->events[counter].x;
-				  const int y = msg->events[counter].y;
-				  double ts =  (1E-6*(double)(msg->events[counter].ts.toNSec()-first_timestamp));//now in usecs
-
-				  //if(ts<15)
-				  //{
-					  //segmentation.at<cv::Vec3b>(cv::Point(x,y))=RGBColors[point2Clusters[counter]];
-					  //segmentation.at<cv::Vec3b>(cv::Point(x,y))=RGBColors[(positionClusterColor[point2Clusters[counter]])%MAX_NUM_CLUSTERS];
-					  segmentation.at<cv::Vec3b>(cv::Point(x,y))=RGBColors[(positionClusterColor[point2Clusters[counter]])&MAX_NUM_CLUSTERS]; //cheaper than % (mod operation)
-				  //}
-				  //else
-				  //	  break;
-				  counter++;
-			  }
-		  }
-		  else
-		  {
-
-*/
-
-		  	  //fouttotalproc<<min(packet, msg->events.size()-beginEvent)<<std::endl;
-
-			  meanshiftCluster_Gaussian(data, &clustCentX, &clustCentY, &clustCentZ, &point2Clusters, bandwidth);
-
-			  //Assign new color or use color from previous clusters?
-			  //if(counterGlobal>0)//not the first time
-			  findClosestCluster(&assign_matches, clustCentX, clustCentY, prev_clustCentX, prev_clustCentY); //no match when clustID is -1
-
-			  //assignClusterColor(&positionClusterColor, clustCentX.size(), assign_matches, prev_positionClusterColor); //assign new colors to clusters
-			  assignClusterColor(&positionClusterColor, clustCentX.size(), assign_matches, prev_positionClusterColor, prev_activeTrajectories); //assign new colors to clusters
-
-			  //foutnumclust<<clustCentX.size()<<std::endl;
-
-			  int tmpColorPos;
-			  float estimClustCenterX=-1., estimClustCenterY=-1.;
-			  //std::vector<int> activeTrajectories(MAX_NUM_CLUSTERS,0);
-			  std::vector<int> activeTrajectories;
-
-			  if(point2Clusters.size()>400) //update positions only when there is enough change (>25%)
-			  {
-				  for(int i=0; i<clustCentX.size(); i++)
+				  if(it==prev_activeTrajectories.end())//if the element tmpcolorpos is not found in the vector
 				  {
-					  estimClustCenterX=-1., estimClustCenterY=-1.;
-
-					  tmpColorPos = (positionClusterColor[i])&(MAX_NUM_CLUSTERS-1);
-
-					  //Check if the new position is being used
-					  /*int idx = 0;
-					  for (int idx=0; idx<prev_activeTrajectories.size(); idx++)
-						  if(tmpColorPos == prev_activeTrajectories[idx])
-							  break;*/
-					  std::vector<int>::iterator it;
-					  it = find (prev_activeTrajectories.begin(), prev_activeTrajectories.end(), tmpColorPos);
-
-					  if(it==prev_activeTrajectories.end())//if the element tmpcolorpos is not found in the vector
-					  {
-						  						  //Initialize the trajectory (just the counter)
-						  //allTrajectories[tmpColorPos] = std::vector<cv::Point>(MAX_NUM_TRAJECTORY_POINTS);
-						  counterTrajectories[tmpColorPos]=0;
+					  counterTrajectories[tmpColorPos]=0;
 
 #if KALMAN_FILTERING
 						  foundTrajectory[tmpColorPos] = false;
@@ -976,16 +545,9 @@ void Meanshift::eventsCallback_simple(const dvs_msgs::EventArray::ConstPtr& msg)
 #endif
 					  }
 
-					  /*
-					  if(prev_activeTrajectories[tmpColorPos]==0) //TODO: when the cluster is tracked all the time, it is active when I go back with &MAX_NUM_CLUSTERS
-					  {
-						  //Initialize the trajectory (just the counter)
-						  //allTrajectories[tmpColorPos] = std::vector<cv::Point>(MAX_NUM_TRAJECTORY_POINTS);
-						  counterTrajectories[tmpColorPos]=0;
-					  }*/
 
 #if KALMAN_FILTERING
-					  if(counterTrajectories[tmpColorPos]>25 & !foundTrajectory[tmpColorPos])
+					  if(counterTrajectories[tmpColorPos]>50 & !foundTrajectory[tmpColorPos])
 					  {
 						  //selectedTrajectory = tmpColorPos;
 						  foundTrajectory[tmpColorPos] = true;
@@ -1067,8 +629,7 @@ void Meanshift::eventsCallback_simple(const dvs_msgs::EventArray::ConstPtr& msg)
 
 					  allTrajectories[tmpColorPos][(counterTrajectories[tmpColorPos]) & (MAX_NUM_TRAJECTORY_POINTS-1)]=end;
 					  counterTrajectories[tmpColorPos]++;
-					  //activeTrajectories[tmpColorPos]=1;
-					  //activeTrajectories.push_back(tmpColorPos);
+					  activeTrajectories.push_back(tmpColorPos);
 				  }
 
 				  prev_clustCentX = clustCentX;
@@ -1104,7 +665,7 @@ void Meanshift::eventsCallback_simple(const dvs_msgs::EventArray::ConstPtr& msg)
 				  }
 			  }
 
-			  trajectories.copyTo(segmentation); //Always keep trajectories
+			  //trajectories.copyTo(segmentation); //Always keep trajectories
 
 			  counterIn =0;
 			  counterOut=0;
@@ -1119,7 +680,7 @@ void Meanshift::eventsCallback_simple(const dvs_msgs::EventArray::ConstPtr& msg)
 					  //if(ts<15) //This is just for painting, we are processing all events
 					  //{
 						  //segmentation.at<cv::Vec3b>(cv::Point(x,y))=RGBColors[(positionClusterColor[point2Clusters[counter]])%MAX_NUM_CLUSTERS];
-						  //segmentation.at<cv::Vec3b>(cv::Point(x,y))=RGBColors[(positionClusterColor[point2Clusters[counterOut]])&(MAX_NUM_CLUSTERS-1)]; //cheaper than % (mod operation)
+						  segmentation.at<cv::Vec3b>(cv::Point(x,y))=RGBColors[(positionClusterColor[point2Clusters[counterOut]])&(MAX_NUM_CLUSTERS-1)]; //cheaper than % (mod operation)
 						  counterOut++;
 				  }
 
@@ -1128,11 +689,30 @@ void Meanshift::eventsCallback_simple(const dvs_msgs::EventArray::ConstPtr& msg)
 			counterOut=0;
 			  for(int i=0; i<clustCentX.size(); i++)
 			  {
-				  	const int x = clustCentX[i]*DVSW;
-					const int y = clustCentY[i]*DVSH;
-				  	ROS_INFO("cluster center x %f , y %f", clustCentX[i], clustCentY[i]);
-					segmentation.at<cv::Vec3b>(cv::Point(x,y))=RGBColors[(positionClusterColor[point2Clusters[counterOut]])&(MAX_NUM_CLUSTERS-1)]; //cheaper than % (mod operation)
+				  	for(int jj = -1; jj<1; jj++)
+					  { 
+						  
+				  	for(int ii = -1; ii<1; ii++)
+					  { 
+				  		const int x = clustCentX[i]*DVSW;
+						const int y = clustCentY[i]*DVSH;
+						posx = x + ii;
+				  		posy = y + jj;
+				  		if(posx<0)
+							  posx = 0;
+				  		if(posy<0)
+							  posy=0;
+				  		if(posx>numCols-1)
+						  {
+							  posx = numCols-1;
+						  }
+				  		if(posy>numRows-1)
+							  posy = numRows-1;
+						segmentation.at<cv::Vec3b>(cv::Point(posx,posy))=cv::Vec3b(255, 255, 255); //cheaper than % (mod operation)
+					  }
+					  }
 					counterOut++;
+
 
 			  }
 		  cv_segments.encoding = "bgr8";
@@ -1144,7 +724,6 @@ void Meanshift::eventsCallback_simple(const dvs_msgs::EventArray::ConstPtr& msg)
 
 		  counterGlobal++;
 	  }
-  }
 }
 
 
